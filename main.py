@@ -19,8 +19,8 @@ def index():
 @app.route("/register/user", methods=["POST"])
 def register():
     username = request.form.get("username")
-    email = request.args.get("email")
-    password = request.args.get("password")
+    email = request.form.get("email")
+    password = request.form.get("password")
     user = db.create_user(username, email, password)
     if not user:
         return "email exists", 406
@@ -30,7 +30,15 @@ def register():
 <p>To Verify your email address, <a href="{uri}">click this link</a></p>
 """
     send_email(user['email'], html)
-    return "Registered", 200
+    return "Registered", 201
+
+@app.route("/verify/<code>")
+def verify(code):
+    user_id = decode(os.environ.get("TOKEN"), code)
+    if not db.check_exist(db.users, "_id", user_id):
+        return "Invalid code", 406
+    db.verify_user(user_id)
+    return "Verified", 202
 
 if __name__ == "__main__":
     app.run(debug=True)

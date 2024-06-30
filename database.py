@@ -68,3 +68,6 @@ class Database:
         self.owners.update_one({"_id": owner}, {"$push": {"restaurants": res_id}})
         self.restaurants.insert_one(res_obj)
         return res_obj
+    
+    def verify_user(self, user):
+        self.users.update_one({"_id": user}, {"$set": {"verified": True}})
