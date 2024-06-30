@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, abort
 import json
 import os
 from dotenv import load_dotenv
+from flask_cors import CORS 
 
 from database import Database
 from emails import send_email
@@ -11,6 +12,8 @@ load_dotenv()
 
 app = Flask(__name__)
 db = Database()
+
+CORS(app) 
 
 @app.route("/")
 def index():
