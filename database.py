@@ -47,20 +47,20 @@ class Database:
             "email": email,
             "password": hashed,
             "created": datetime.now().timestamp(),
+            "verified": False,
             "menu": {},
             "restaurants": []
         }
         self.owners.insert_one(user_obj)
         return user_obj
 
-    def create_restaurant(self, owner, name, addr, contact_no):
+    def create_restaurant(self, owner, name, addr):
         res_id = str(uuid4())
         res_obj = {
             "_id": res_id,
             "owner": owner,
             "name": name, 
             "addr": addr,
-            "contact_no": contact_no,
             "created": datetime.now().timestamp(),
             "menu": [],
             "order_history": []
@@ -69,5 +69,6 @@ class Database:
         self.restaurants.insert_one(res_obj)
         return res_obj
     
-    def verify_user(self, user):
-        self.users.update_one({"_id": user}, {"$set": {"verified": True}})
+    def verify_user(self, mode, user):
+        db = self.users if mode == "user" else self.owners
+        db.update_one({"_id": user}, {"$set": {"verified": True}})
