@@ -30,6 +30,7 @@ class Database:
             "email": email,
             "password": hashed,
             "created": datetime.now().timestamp(),
+            "verified": False,
             "order_history": []
         }
         self.users.insert_one(user_obj)
@@ -54,7 +55,7 @@ class Database:
 
     def create_restaurant(self, owner, name, addr, contact_no):
         res_id = str(uuid4())
-        user_obj = {
+        res_obj = {
             "_id": res_id,
             "owner": owner,
             "name": name, 
@@ -65,4 +66,5 @@ class Database:
             "order_history": []
         }
         self.owners.update_one({"_id": owner}, {"$push": {"restaurants": res_id}})
-        self.restaurants.insert_one(user_obj)
+        self.restaurants.insert_one(res_obj)
+        return res_obj
