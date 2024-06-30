@@ -4,14 +4,7 @@ import pymongo
 import bcrypt
 
 from uuid import uuid4
-import random
-from datetime import timedelta, datetime
-import requests
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import json
+from datetime import datetime
 import os
 
 class Database:
@@ -22,22 +15,54 @@ class Database:
         self.users          = self.db.users
         self.owners         = self.db.owners
         self.restaurants    = self.db.restaurants
-        self.menus          = self.db.menus
 
     def check_exist(self, collection:pymongo.collection.Collection, key, value):
         return collection.find_one({key: value}) is not None
 
     def create_user(self, name, email, password:str):
-        if not self.check_exist(self.users, "email", email):
-            salt = bcrypt.gensalt(rounds=15)
-            hashed = bcrypt.hashpw(password.encode(), salt)
-            user_obj = {
-                "_id": str(uuid4()),
-                "name": name, 
-                "email": email,
-                "password": hashed,
-                "order_history": []
-            }
-            self.users.insert_one(user_obj)
-            return user_obj
-        return False
+        if self.check_exist(self.users, "email", email):
+            return False
+        salt = bcrypt.gensalt(rounds=15)
+        hashed = bcrypt.hashpw(password.encode(), salt)
+        user_obj = {
+            "_id": str(uuid4()),
+            "name": name, 
+            "email": email,
+            "password": hashed,
+            "created": datetime.now().timestamp(),
+            "order_history": []
+        }
+        self.users.insert_one(user_obj)
+        return user_obj
+    
+    def create_owner(self, name, email, password:str):
+        if self.check_exist(self.owners, "email", email):
+            return False
+        salt = bcrypt.gensalt(rounds=15)
+        hashed = bcrypt.hashpw(password.encode(), salt)
+        user_obj = {
+            "_id": str(uuid4()),
+            "name": name, 
+            "email": email,
+            "password": hashed,
+            "created": datetime.now().timestamp(),
+            "menu": {},
+            "restaurants": []
+        }
+        self.owners.insert_one(user_obj)
+        return user_obj
+
+    def create_restaurant(self, owner, name, addr, contact_no):
+        res_id = str(uuid4())
+        user_obj = {
+            "_id": res_id,
+            "owner": owner,
+            "name": name, 
+            "addr": addr,
+            "contact_no": contact_no,
+            "created": datetime.now().timestamp(),
+            "menu": [],
+            "order_history": []
+        }
+        self.owners.update_one({"_id": owner}, {"$push": {"restaurants": res_id}})
+        self.restaurants.insert_one(user_obj)
