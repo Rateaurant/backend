@@ -16,6 +16,9 @@ class Database:
         self.owners         = self.db.owners
         self.restaurants    = self.db.restaurants
 
+    def check_exist_global(self, key, value):
+        return self.users.find_one({key: value}) is not None or self.owners.find_one({key: value}) is not None
+
     def check_exist(self, collection:pymongo.collection.Collection, key, value):
         return collection.find_one({key: value}) is not None
 
@@ -26,6 +29,7 @@ class Database:
         hashed = bcrypt.hashpw(password.encode(), salt)
         user_obj = {
             "_id": str(uuid4()),
+            "type": "user",
             "name": name, 
             "email": email,
             "password": hashed,
@@ -43,6 +47,7 @@ class Database:
         hashed = bcrypt.hashpw(password.encode(), salt)
         user_obj = {
             "_id": str(uuid4()),
+            "type": "owner",
             "name": name, 
             "email": email,
             "password": hashed,
@@ -72,3 +77,14 @@ class Database:
     def verify_user(self, mode, user):
         db = self.users if mode == "user" else self.owners
         db.update_one({"_id": user}, {"$set": {"verified": True}})
+
+    def fetch_user(self, key, value):
+        user = self.users.find_one({key: value})
+        if user is None:
+            user = self.owners.find_one({key: value})
+        return user
+    
+    def authenticate_user(self, email, password:str):
+        user = self.fetch_user("email", email)
+        if user:
+            return bcrypt.checkpw(password.encode(), user['password'])
