@@ -19,7 +19,7 @@ CORS(app)
 def index():
     return " Rateaurant API"
 
-@app.route("/register/<mode>", methods=["POST"])
+@app.route("/auth/register/<mode>", methods=["POST"])
 def register(mode):
     if mode not in ["user", "owner"]:
         return "Invalid mode", 404
@@ -44,7 +44,7 @@ def register(mode):
 
     return "Registered", 201
 
-@app.route("/verify/<mode>/<code>")
+@app.route("/auth/verify/<mode>/<code>")
 def verify(mode, code):
     if mode not in ["user", "owner"]:
         return "Invalid mode", 404
