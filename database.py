@@ -2,9 +2,11 @@ from pymongo import MongoClient
 import pymongo.collection
 import pymongo
 import bcrypt
+import jwt
 
 from uuid import uuid4
 from datetime import datetime
+from datetime import timedelta
 import os
 
 class Database:
@@ -88,3 +90,16 @@ class Database:
         user = self.fetch_user("email", email)
         if user:
             return bcrypt.checkpw(password.encode(), user['password'])
+        
+    def gen_token(self, email):
+        d = (datetime.now() + timedelta(days=7))
+        _id = self.fetch_user("email", email)['_id']
+        token = jwt.encode({"_id": _id, "exp": d}, os.environ.get("secret"), algorithm="HS256")
+        return token
+
+    def authenticate_token(self, token):
+        try:
+            data = jwt.decode(token, os.environ.get("secret"), algorithms=["HS256"])
+            return data['_id']
+        except:
+            return False

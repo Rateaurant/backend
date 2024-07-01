@@ -4,3 +4,4 @@ pymongo
 dnspython
 bcrypt
 flask-cors
+pyjwt

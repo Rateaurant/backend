@@ -83,8 +83,9 @@ def login():
     if not db.authenticate_user(email, password):
         return "Invalid Password", 401
     
-    user = db.fetch_user("email", email)
-    return jsonify(user)
+    # user = db.fetch_user("email", email)
+    token = db.gen_token(email)
+    return jsonify({"status": "success", "token": token}), 200
 
 
 if __name__ == "__main__":
