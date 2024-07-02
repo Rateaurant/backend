@@ -38,7 +38,7 @@ def register(mode):
         ):
         return "Malformed Data", 400
 
-    if db.check_exist_global("email", email) is not None:
+    if db.check_exist_global("email", email):
         return "Email alredy registered", 406
 
     if mode == "user":
@@ -69,7 +69,7 @@ def verify():
     db.verify_user(obj['mode'], obj['_id'])
     return "Verified", 202
 
-@app.route("/auth/login")
+@app.route("/auth/login", methods=["POST"])
 def login():
     email = request.form.get("email")
     password = request.form.get("password")
@@ -80,7 +80,7 @@ def login():
         ):
         return "Malformed Data", 400
     
-    if db.check_exist_global("email", email) is None:
+    if not db.check_exist_global("email", email):
         return "Email not registered", 406
     
     if not db.authenticate_user(email, password):
