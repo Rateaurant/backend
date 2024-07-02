@@ -41,7 +41,7 @@ class Database:
         }
         self.users.insert_one(user_obj)
         return user_obj
-    
+
     def create_owner(self, name, email, password:str):
         if self.check_exist(self.owners, "email", email):
             return False
@@ -75,7 +75,7 @@ class Database:
         self.owners.update_one({"_id": owner}, {"$push": {"restaurants": res_id}})
         self.restaurants.insert_one(res_obj)
         return res_obj
-    
+
     def verify_user(self, mode, user):
         db = self.users if mode == "user" else self.owners
         db.update_one({"_id": user}, {"$set": {"verified": True}})
@@ -85,12 +85,12 @@ class Database:
         if user is None:
             user = self.owners.find_one({key: value})
         return user
-    
+
     def authenticate_user(self, email, password:str):
         user = self.fetch_user("email", email)
         if user:
             return bcrypt.checkpw(password.encode(), user['password'])
-        
+
     def gen_token(self, email):
         d = (datetime.now() + timedelta(days=7))
         _id = self.fetch_user("email", email)['_id']

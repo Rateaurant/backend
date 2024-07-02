@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, abort, jsonify
 from dotenv import load_dotenv
 from flask_cors import CORS 
+import jwt
 
 import json
 import os
@@ -46,8 +47,10 @@ def register(mode):
         user = db.create_owner(username, email, password)
     if not user:
         return "Email alredy registered", 406
+    
+    token = jwt.encode({"_id": user['_id'], "mode": mode}, os.environ.get("secret"), algorithm="HS256")
+    uri = f"{os.environ.get("HOME")}/verify/?code={token}"
 
-    uri = f"{os.environ.get("DOMAIN")}/verify/{mode}/{encode(os.environ.get("TOKEN"), user['_id'])}"
     html =f"""
 <p>Hello! Thank you for signing up to Rateaurant!</p>
 <p>To Verify your email address, <a href="{uri}">click this link</a></p>
@@ -56,14 +59,14 @@ def register(mode):
 
     return "Registered", 201
 
-@app.route("/auth/verify/<mode>/<code>")
-def verify(mode, code):
-    if mode not in ["user", "owner"]:
-        return "Invalid mode", 404
-    user_id = decode(os.environ.get("TOKEN"), code)
-    if not db.check_exist(db.users, "_id", user_id) and not db.check_exist(db.owners, "_id", user_id):
-        return "Invalid code", 406
-    db.verify_user(mode, user_id)
+@app.route("/auth/verify")
+def verify(mode, code):    
+    code = request.args.get("code")
+    try:
+        obj = jwt.decode(code, os.environ.get("secret"), algorithms=["HS256"])
+    except:
+        return "Invalid Code", 406
+    db.verify_user(obj['mode'], obj['_id'])
     return "Verified", 202
 
 @app.route("/auth/login")
