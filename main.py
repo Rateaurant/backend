@@ -60,7 +60,7 @@ def register(mode):
     return "Registered", 201
 
 @app.route("/auth/verify")
-def verify(mode, code):    
+def verify():    
     code = request.args.get("code")
     try:
         obj = jwt.decode(code, os.environ.get("secret"), algorithms=["HS256"])
