@@ -88,7 +88,9 @@ def login():
     
     # user = db.fetch_user("email", email)
     token = db.gen_token(email)
-    return jsonify({"status": "success", "token": token}), 200
+    res = jsonify({"status": "success"})
+    res.headers['set-cookie'] = token
+    return res, 200
 
 
 if __name__ == "__main__":
