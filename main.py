@@ -6,6 +6,7 @@ import jwt
 import json
 import os
 import re
+from threading import Thread
 
 from database import Database
 from emails import send_email
@@ -55,7 +56,8 @@ def register(mode):
 <p>Hello! Thank you for signing up to Rateaurant!</p>
 <p>To Verify your email address, <a href="{uri}">click this link</a></p>
 """
-    send_email(user['email'], html)
+    Thread(target=send_email, args=(user['email'], html)).start()
+    # send_email(user['email'], html)
 
     return "Registered", 201
 
