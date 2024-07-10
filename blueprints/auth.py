@@ -35,26 +35,16 @@ class Auth(object):
             ):
             return jsonify({"message": "malformed data"}), 404
         
-        if self.db.check_exist_global("email", email):
+        if self.db.fetch_user_global("email", email) is not None:
             return jsonify({"message": "email alredy registered"}), 406
         
         
         if mode == "user":
-            user = self.db.create_user(username, email, password)
+            user = self.db.create_customer(username, email, password)
         else:
             user = self.db.create_owner(username, email, password)
         if not user:
             return jsonify({"message": "email alredy registered"}), 406
-        
-        token = jwt.encode({"_id": user['_id'], "mode": mode}, os.environ.get("secret"), algorithm="HS256")
-        uri = f"{os.environ.get("HOME")}/verify/?code={token}"
-
-        html =f"""
-<p>Hello! Thank you for signing up to Rateaurant!</p>
-<p>To Verify your email address, <a href="{uri}">click this link</a></p>
-"""
-        Thread(target=self.modules.emails.send_email, args=(user['email'], html)).start()
-        # send_email(user['email'], html)
 
         return jsonify({"message": "registered"}), 201
     
