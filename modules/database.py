@@ -1,6 +1,9 @@
 from pymongo import MongoClient
 import pymongo.collection
 import pymongo
+
+from supabase import create_client, Client
+from postgrest._sync.request_builder import SyncRequestBuilder
 import bcrypt
 import jwt
 
@@ -11,15 +14,29 @@ import os
 
 class Database:
     def __init__(self):
-        self.client         = MongoClient(os.environ.get('MONGO_URL'))
-        self.db             = self.client.rateaurant
+        url: str = os.environ.get("SUPABASE_URL")
+        key: str = os.environ.get("SUPABASE_KEY")
+        self.supabase: Client = create_client(url, key)
 
-        self.users          = self.db.users
-        self.owners         = self.db.owners
-        self.restaurants    = self.db.restaurants
+        self.customer       = self.supabase.table("customer")
+        self.owners         = self.supabase.table("owners")
+        self.restaurants    = self.supabase.table("restaurants")
 
-    def check_exist_global(self, key, value):
-        return self.users.find_one({key: value}) is not None or self.owners.find_one({key: value}) is not None
+    def fetch_user(self, table:SyncRequestBuilder, key, value):
+        res = table.select("*").eq(key, value).execute().model_dump()
+        if len(res) == 0:
+            return None
+        return res[0]
+
+    def fetch_user_global(self, key, value):
+        customers = self.fetch_user(self.customer, key, value)
+        if customers is not None:
+            return customers
+        
+        owners = self.fetch_user(self.owners, key, value)
+        if owners is not None:
+            return owners
+        return None
 
     def check_exist(self, collection:pymongo.collection.Collection, key, value):
         return collection.find_one({key: value}) is not None
