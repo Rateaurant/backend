@@ -81,24 +81,15 @@ class Database:
             }
         })
 
-    def verify_user(self, mode, user):
-        db = self.users if mode == "user" else self.owners
-        db.update_one({"_id": user}, {"$set": {"verified": True}})
-
     def authenticate_user(self, email, password:str):
-        user = self.fetch_user("email", email)
-        if user:
-            return bcrypt.checkpw(password.encode(), user['password'])
+        user = self.supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        return user.session
 
     def gen_token(self, email):
         d = (datetime.now() + timedelta(days=7))
-        _id = self.fetch_user("email", email)['_id']
+        _id = self.fetch_user_global("email", email)['_id']
         token = jwt.encode({"_id": _id, "exp": d}, os.environ.get("secret"), algorithm="HS256")
         return token
-
-    def authenticate_token(self, token):
-        try:
-            data = jwt.decode(token, os.environ.get("secret"), algorithms=["HS256"])
-            return data['_id']
-        except:
-            return False

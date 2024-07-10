@@ -5,6 +5,7 @@ from threading import Thread
 import re
 import os
 import sys
+from gotrue.errors import AuthApiError
 
 
 class Auth(object):
@@ -14,7 +15,6 @@ class Auth(object):
         self.modules = modules
 
         self.auth_router.add_url_rule("/register/<mode>", "register", self.register, methods=["POST"])
-        self.auth_router.add_url_rule("/verify", "verify", self.verify)
         self.auth_router.add_url_rule("/login", "login", self.login, methods=["POST"])
     
     # @auth_router.route("/register/<mode>", methods=["POST"])
@@ -48,16 +48,6 @@ class Auth(object):
 
         return jsonify({"message": "registered"}), 201
     
-    def verify(self):
-        code = request.args.get("code")
-        try:
-            obj = jwt.decode(code, os.environ.get("secret"), algorithms=["HS256"])
-        except:
-            return jsonify({"message": "invalid code"}), 406
-        print(obj)
-        self.db.verify_user(obj['mode'], obj['_id'])
-        return jsonify({"message": "Verified"}), 202
-    
     def login(self):
         email = request.form.get("email")
         password = request.form.get("password")
@@ -68,13 +58,14 @@ class Auth(object):
             ):
             return jsonify({"message": "malformed data"}), 400
         
-        if not self.db.check_exist_global("email", email):
+        if not self.db.fetch_user_global("email", email):
             return jsonify({"message": "email not registered"}), 406
+
+        try:
+            self.db.authenticate_user(email, password)
+        except AuthApiError:
+            return jsonify({"message": "not authenticated"}), 401
         
-        if not self.db.authenticate_user(email, password):
-            return jsonify({"message": "invalid password"}), 401
-        
-        # user = db.fetch_user("email", email)
         token = self.db.gen_token(email)
         res = jsonify({"message": "success"})
         res.headers['set-cookie'] = token
