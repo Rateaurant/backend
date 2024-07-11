@@ -16,8 +16,8 @@ class Auth(object):
 
         self.auth_router.add_url_rule("/register/<mode>", "register", self.register, methods=["POST"])
         self.auth_router.add_url_rule("/login", "login", self.login, methods=["POST"])
-    
-    # @auth_router.route("/register/<mode>", methods=["POST"])
+        self.auth_router.add_url_rule("/gen_tokens", "gen_tokens", self.gen_token)
+
     def register(self, mode):
         if mode not in ["user", "owner"]:
             return jsonify({"message": "invalid mode"}), 404
@@ -66,7 +66,19 @@ class Auth(object):
         except AuthApiError:
             return jsonify({"message": "not authenticated"}), 401
         
-        token = self.db.gen_token(email)
-        res = jsonify({"message": "success"})
-        res.headers['set-cookie'] = token
-        return res, 200
+        tokens = self.db.gen_tokens(email)
+        tokens['message'] = "success"
+        return jsonify(tokens), 200
+    
+    def gen_token(self):
+        refresh_token = request.args.get("refresh_token")
+        if refresh_token is None:
+            return jsonify({"message": "refresh token not provided"})
+        # print(refresh_token)
+        new_tokens:dict = self.db.gen_new_access(refresh_token)
+        print(new_tokens)
+        if "access_token" not in new_tokens:
+            new_tokens['message'] = "invalid token"
+        else:
+            new_tokens['message'] = "success"
+        return jsonify(new_tokens)

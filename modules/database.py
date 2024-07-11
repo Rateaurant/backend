@@ -3,6 +3,7 @@ from postgrest._sync.request_builder import SyncRequestBuilder
 import bcrypt
 import jwt
 
+
 from uuid import uuid4
 from datetime import datetime
 from datetime import timedelta
@@ -88,8 +89,29 @@ class Database:
         })
         return user.session
 
-    def gen_token(self, email):
-        d = (datetime.now() + timedelta(days=7))
+    def gen_tokens(self, email):
+        d = datetime.now()
         _id = self.fetch_user_global("email", email)['_id']
-        token = jwt.encode({"_id": _id, "exp": d}, os.environ.get("secret"), algorithm="HS256")
-        return token
+        access_token = jwt.encode({"_id": _id, "exp": d+timedelta(days=7), "type": "access"}, os.environ.get("secret"), algorithm="HS256")
+        refresh_token = jwt.encode({"_id": _id, "exp": d+timedelta(days=90), "type": "refresh"}, os.environ.get("secret"), algorithm="HS256")
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+    
+    def gen_new_access(self, refresh_token):
+        try:
+            data = jwt.decode(refresh_token, os.environ.get("secret"), algorithms=["HS256"])
+            print(data)
+            if data['type'] == "refresh":
+                _id = data['_id']
+                d = datetime.now()
+                new_access_token = jwt.encode({"_id": _id, "exp": d+timedelta(days=7), "type": "access"}, os.environ.get("secret"), algorithm="HS256")
+                new_refresh_token = jwt.encode({"_id": _id, "exp": d+timedelta(days=90), "type": "refresh"}, os.environ.get("secret"), algorithm="HS256")
+                return {
+                    "access_token": new_access_token,
+                    "refresh_token": new_refresh_token
+                }
+        except:
+            pass
+        return {}
